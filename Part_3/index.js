@@ -1,6 +1,14 @@
 const express = require("express");
+const morgan = require("morgan");
 const app = express();
 app.use(express.json());
+morgan.token("body", (req) =>
+  req.method === "POST" ? JSON.stringify(req.body) : " "
+);
+app.use(
+  morgan(":method :url :status :res[content-length] - :response-time ms :body")
+);
+
 let persons = [
   { id: 1, name: "Arto Hellas", number: "040-123456" },
   { id: 2, name: "Ada Lovelace", number: "39-44-5323523" },
@@ -31,9 +39,18 @@ app.delete("/api/persons/:id", (req, res) => {
   res.status(204).end();
 });
 app.post("/api/persons", (req, res) => {
-  const person = req.body;
-  persons.push(person);
-  res.json(persons);
+  const { name, number } = req.body;
+  const existName = persons.find((person) => person.name == name);
+  if (!name || !number) {
+    res.status(400).json({ error: "Name and number are required" });
+  } else if (existName) {
+    res.status(400).json({ error: "Name must be unique" });
+  } else {
+    const id = Math.floor(Math.random() * 10000000);
+    let person = { id, name, number };
+    persons.push(person);
+    res.status(200).json({ message: `${name} is added` });
+  }
 });
 const PORT = 3001;
 app.listen(PORT, () => {
