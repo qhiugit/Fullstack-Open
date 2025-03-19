@@ -1,10 +1,8 @@
 const express = require("express");
 const morgan = require("morgan");
-const dotenv = require("dotenv");
 const app = express();
 const cors = require("cors");
-const { default: mongoose } = require("mongoose");
-dotenv.config();
+const Person = require("./mongo");
 app.use(express.json());
 app.use(cors());
 morgan.token("body", (req) =>
@@ -13,56 +11,48 @@ morgan.token("body", (req) =>
 app.use(
   morgan(":method :url :status :res[content-length] - :response-time ms :body")
 );
-const connectDB = async () => {
-  try {
-    await mongoose.connect(process.env.MONGODB_URL);
-    console.log("Connected to MongoDB");
-  } catch (error) {
-    console.log(error.message);
-  }
-};
-connectDB();
-let persons = [
-  { id: 1, name: "Arto Hellas", number: "040-123456" },
-  { id: 2, name: "Ada Lovelace", number: "39-44-5323523" },
-  { id: 3, name: "Dan Abramov", number: "12-43-234345" },
-  { id: 4, name: "Mary Poppendieck", number: "39-23-6423122" },
-];
 
-app.get("/api/persons", (req, res) => {
-  res.json(persons);
-});
-app.get("/api/persons/:id", (req, res) => {
-  const id = req.params.id;
-  const person = persons.find((person) => person.id == id);
-  if (!person) {
-    res.status(404).json({ error: "Person not found" });
+app.get("/api/persons", async (req, res) => {
+  try {
+    const persons = await Person.find();
+    res.status(200).json(persons);
+  } catch (error) {
+    res.status(500).json({ error: "no info" });
   }
-  res.json(person);
 });
-app.get("/api/info", (req, res) => {
-  const numberpeople = persons.length;
-  const currentTime = Date().toString();
-  res.send(`<p>Phonebook has info for ${numberpeople} people</p>
-    <p>${currentTime}</p>`);
+app.get("/api/persons/:id", async (req, res) => {
+  try {
+    const findPerson = await Person.findById(req.params.id);
+    res.status(200).json(findPerson);
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
-app.delete("/api/persons/:id", (req, res) => {
-  const id = req.params.id;
-  persons = persons.filter((person) => person.id != id);
-  res.status(204).end();
+app.get("/api/info", async (req, res) => {
+  try {
+    const numberpeople = await Person.length;
+    const currentTime = Date().toString();
+    res.send(`<p>Phonebook has info for ${numberpeople} people</p>
+      <p>${currentTime}</p>`);
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
-app.post("/api/persons", (req, res) => {
-  const { name, number } = req.body;
-  const existName = persons.find((person) => person.name == name);
-  if (!name || !number) {
-    res.status(400).json({ error: "Name and number are required" });
-  } else if (existName) {
-    res.status(400).json({ error: "Name must be unique" });
-  } else {
-    const id = Math.floor(Math.random() * 10000000);
-    let person = { id, name, number };
-    persons.push(person);
-    res.status(200).json({ message: `${name} is added` });
+app.delete("/api/persons/:id", async (req, res) => {
+  try {
+    await Person.findByIdAndDelete(req.params.id);
+    res.status(200).json("Deleted");
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+app.post("/api/persons", async (req, res) => {
+  try {
+    const newperson = new Person(req.body);
+    await newperson.save();
+    res.status(200).json(newperson);
+  } catch (err) {
+    res.status(500).json(err);
   }
 });
 const PORT = process.env.PORT || 3001;
