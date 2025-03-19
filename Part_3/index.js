@@ -1,8 +1,11 @@
 const express = require("express");
 const morgan = require("morgan");
+const dotenv = require("dotenv");
 const app = express();
-app.use(express.json());
 const cors = require("cors");
+const { default: mongoose } = require("mongoose");
+dotenv.config();
+app.use(express.json());
 app.use(cors());
 morgan.token("body", (req) =>
   req.method === "POST" ? JSON.stringify(req.body) : " "
@@ -10,7 +13,15 @@ morgan.token("body", (req) =>
 app.use(
   morgan(":method :url :status :res[content-length] - :response-time ms :body")
 );
-
+const connectDB = async () => {
+  try {
+    await mongoose.connect(process.env.MONGODB_URL);
+    console.log("Connected to MongoDB");
+  } catch (error) {
+    console.log(error.message);
+  }
+};
+connectDB();
 let persons = [
   { id: 1, name: "Arto Hellas", number: "040-123456" },
   { id: 2, name: "Ada Lovelace", number: "39-44-5323523" },
@@ -54,7 +65,7 @@ app.post("/api/persons", (req, res) => {
     res.status(200).json({ message: `${name} is added` });
   }
 });
-const PORT = process.env.PORT || 3001
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`)
-})
+  console.log(`Server running on port ${PORT}`);
+});
