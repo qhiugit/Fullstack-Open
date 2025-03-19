@@ -5,6 +5,9 @@ const cors = require("cors");
 const Person = require("./mongo");
 app.use(express.json());
 app.use(cors());
+app.use(express.static('dist'))
+
+
 morgan.token("body", (req) =>
   req.method === "POST" ? JSON.stringify(req.body) : " "
 );
