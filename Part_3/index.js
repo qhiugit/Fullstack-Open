@@ -2,11 +2,11 @@ const express = require("express");
 const morgan = require("morgan");
 const app = express();
 const cors = require("cors");
-const Person = require("./mongo");
+const Person = require("./models/person.js");
+const connectDB = require("./mongo");
 app.use(express.json());
-app.use(cors());
-app.use(express.static('dist'))
-
+app.use(cors({ origin: "*" }));
+app.use(express.static("dist"));
 
 morgan.token("body", (req) =>
   req.method === "POST" ? JSON.stringify(req.body) : " "
@@ -14,7 +14,6 @@ morgan.token("body", (req) =>
 app.use(
   morgan(":method :url :status :res[content-length] - :response-time ms :body")
 );
-
 app.get("/api/persons", async (req, res) => {
   try {
     const persons = await Person.find();
